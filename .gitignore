@@ -16,7 +16,7 @@ Model*/
 
 # data files
 *.hdf5
-Data/
+journal*.npy
 
 # backup files
 Backup/
