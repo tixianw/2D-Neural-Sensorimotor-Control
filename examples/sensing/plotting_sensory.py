@@ -51,9 +51,9 @@ def main(case):
 		raise FileNotFoundError(f"Folder not found: {folder_name}, run the simulation first.")
 	
 	if case == 'straight':
-		file_name = 'journal_video_sensing_straight'
+		file_name = 'journal_sensing_straight'
 	elif case == 'bend':
-		file_name = 'journal_video_sensing_bend'
+		file_name = 'journal_sensing_bend'
 		
 	data = np.load(folder_name + file_name + '.npy', allow_pickle='TRUE').item()
 
