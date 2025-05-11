@@ -109,23 +109,18 @@ class MuscleCtrl(NoForces):
 			self.ramp_up_time = ramp_up_time
 		self.count = 0
 	
-	# def set_activation(self, activation):
-	# 	# self.ctrl_mag = np.zeros([3, system.n_elems+1])
-	# 	self.ctrl_mag = activation
-
 	def fn_rigidity(self, actuation):
 		gamma_stretch = 0. # 0. # 1 # 5
 		gamma_bend = 0. # gamma_stretch
-		self.shear_rigidity = 1 + gamma_stretch * np.sum(_aver(actuation[-1,:]), axis=0) # _aver(actuation[-1, :]) # 
-		self.bend_rigidity = 1 + gamma_bend * np.sum(actuation[-1, 1:-1], axis=0) # actuation[-1, 1:-1], # 
+		self.shear_rigidity = 1 + gamma_stretch * np.sum(_aver(actuation[-1,:]), axis=0)
+		self.bend_rigidity = 1 + gamma_bend * np.sum(actuation[-1, 1:-1], axis=0)
 	
 	def apply_torques(self, system, time: np.float = 0.0):
 		### change rigidity
 		self.fn_rigidity(self.muscle.magnitude)
-		system.shear_matrix = self.shear_matrix.copy() * self.shear_rigidity # [-1,-1,:] remove shear
+		system.shear_matrix = self.shear_matrix.copy() * self.shear_rigidity
 		system.bend_matrix = self.bend_matrix.copy() * self.bend_rigidity
 
-		# self.muscle.set_control(self.ctrl_mag)
 		self.muscle(system)
 
 		system.external_forces += self.muscle.external_forces
@@ -135,7 +130,6 @@ class MuscleCtrl(NoForces):
 	
 	def callback(self):
 		if self.count % self.every == 0:
-			# self.callback_list['u'].append(self.ctrl_mag.copy())
 			self.callback_list['u'].append(self.muscle.magnitude.copy())
 
 class ArmEnvironment:
@@ -167,43 +161,31 @@ class ArmEnvironment:
 	
 	### Set up a rod
 	def set_rod(self):
-		n_elem = 100 # 150 # 50 # N_exp # 
+		n_elem = 100
 		start = np.zeros((3,))
-		self.direction = np.array([1.0, 0.0, 0.0])  # np.array([0.0, 0.0, 1.0])
-		self.normal = np.array([0.0, 0.0, -1.0])  # np.array([0.0, 1.0, 0.0])
-		base_length = 0.2 # 0.2
-		# base_radius = 0.01 # 0.025
-		radius_base = base_length/20 # 0.012 # 0.01 # 0.02  # radius of the arm at the base
-		radius_tip = radius_base/10 # 0.0012 # 0.004 # 0.004 # 0.0004  # radius of the arm at the tip
+		self.direction = np.array([1.0, 0.0, 0.0])
+		self.normal = np.array([0.0, 0.0, -1.0])
+		base_length = 0.2
+		radius_base = base_length/20 # radius of the arm at the base
+		radius_tip = radius_base/10 # radius of the arm at the tip
 		radius = np.linspace(radius_base, radius_tip, n_elem+1)
-		# radius = base_radius
 		base_radius = (radius[:-1]+radius[1:])/2
-		density = 1042 # 700 # 1000
+		density = 1042
 		damping = 0.01
-		# damping_torque = 0.01
-		# dissipation = damping * ((radius/radius_base)**2) # 0.02 np.ones(len(base_radius)) # 
-		# nu_torque = damping_torque * ((base_radius/radius_base)**4) # 0.01 np.ones(len(base_radius)) # 
 		E = 1e4 # 1e4
 		poisson_ratio = 0.5
-		shear_modulus = E / 2 * (poisson_ratio + 1.0) # E/10
+		shear_modulus = E / 2 * (poisson_ratio + 1.0)
 		## initial position and rest curvature
-		# self.flag_shooting = 1
 		if self.flag_shooting:
 			adapt, Vt0, Vt1 = 1.0, 60, 80 # 1.0, 40, 120 # 2.0, 65, 65
 			self.init_data = np.load('Data/initial_data_'+str(adapt)+'-'+str(Vt0)+'-'+str(Vt1)+'.npy', allow_pickle='TRUE').item()
 			init_pos = self.init_data['pos']
 			print('shooting simulation ...')
 		else:
-			# init_data = np.load('Data/paper_curl_tau0.04_lmd0.1_tauA0.4_inhibit0.0_adapt1.0_V40-40-120-0.npy', allow_pickle='TRUE').item()
-			# init_pos = np.vstack([init_data['position'][-1][-1,...], np.zeros(n_elem+1)])
-			# if direction[0]:
 			init_pos = np.vstack([np.linspace(0,base_length,n_elem+1), np.zeros([2,n_elem+1])])
-			# elif direction[1]:
-				# init_pos = np.vstack([np.zeros(n_elem+1), -np.linspace(0,base_length,n_elem+1), np.zeros(n_elem+1)])
 			print('reaching simulation ...')
 
 		s = np.linspace(0, base_length, n_elem+1)
-		# s_mean = (s[1:] + s[:-1])/2
 
 		self.arm_param = {'n_elem': n_elem,
 			'L': base_length,
@@ -211,9 +193,6 @@ class ArmEnvironment:
 			'base_radius': base_radius,
 			'rho': density,
 			'damping': damping,
-			# 'damping_torque': damping_torque,
-			# 'dissipation': dissipation,
-			# 'nu_torque': nu_torque,
 			'E': E,
 			'G': shear_modulus, 
 			'initial_pos': init_pos,
@@ -228,13 +207,12 @@ class ArmEnvironment:
 			base_length,
 			base_radius,
 			density,
-			0.0, # dissipation, # 
+			0.0,
 			E,
-			# nu_for_torques=nu_torque,
 			shear_modulus=shear_modulus,
 			position=init_pos,
 		)
-		self.shearable_rod.shear_matrix *= 10 ## inextensible + unshearable # 10 # 1000
+		self.shearable_rod.shear_matrix *= 10 ## inextensible + unshearable
 		self.shear_matrix = self.shearable_rod.shear_matrix.copy()
 		self.bend_matrix = self.shearable_rod.bend_matrix.copy()
 
@@ -242,16 +220,13 @@ class ArmEnvironment:
 		### Add analytic damping
 		self.simulator.dampen(self.shearable_rod).using(
 			AnalyticalLinearDamper,
-			damping_constant=damping/density/(np.pi*radius_base**2)/5, # /2,
+			damping_constant=damping/density/(np.pi*radius_base**2)/5,
 			time_step=self.time_step,
 		)
 		## Add Constraints
 		self.simulator.constrain(self.shearable_rod).using(
 			OneEndFixedBC, constrained_position_idx=(0,), constrained_director_idx=(0,)
 		)
-		# self.simulator.connect(self.shearable_rod, self.shearable_rod).using(
-		# 	SelfContact, k=1.0, nu=0.1,
-		# )
 
 	def add_drag(self):
 		### environment parameters
@@ -281,8 +256,6 @@ class ArmEnvironment:
 		max_force = (self.shearable_rod.radius/self.shearable_rod.radius[0])**2 * n_max[:, None]
 		passive_ratio = 1
 		radius_ratio = np.array([1, -1, 0])
-		# # print(np.count_nonzero(radius_ratio),'longitudinal, ', len(radius_ratio)-np.count_nonzero(radius_ratio), 'transverse')
-		# print('n_max:', n_max)
 
 		self.muscle = ContinuousActuation(
 			self.shearable_rod.n_elems,
@@ -300,7 +273,7 @@ class ArmEnvironment:
 			self.bend_matrix,
 			self.muscle_list,
 			self.step_skip,
-			ramp_up_time=0.01 # 0.2 # 0.01 # 0.8 # 0.5 # 0.1
+			ramp_up_time=0.01
 		)
 
 	def set_arm(self):

@@ -68,20 +68,16 @@ class Environment(ArmEnvironment):
 			x_star = 0.1 #
 			y_star = 0.1 # 
 		else:
-			x_star = 0.2 # 0.15 # 
-			y_star = 0.1 # 0.075 # 
+			if self.flags[3] == 'LM_reach':
+				x_star = 0.15
+				y_star = 0.075
+			else:
+				x_star = 0.2
+				y_star = 0.1
 		print('target:', np.array([x_star,y_star]))
 
 		self.target = np.zeros([self.total_steps, 2])
 		
-		# ## moving target
-		# pos1 = np.array([x_star, y_star])
-		# pos2 = np.array([-x_star*1., y_star])
-		# # pos2 = np.array([x_star*1.5, -y_star])
-		# # target_traj(target, pos1, pos1, 0., 0.15, self.total_steps)
-		# target_traj(self.target, pos1, pos2, 0., 1., self.total_steps)
-		# # target_traj(target, pos2, pos2, 0.8, 1., self.total_steps)
-
 		## static target
 		self.target[:,:] = np.array([x_star,y_star])
 
@@ -89,8 +85,7 @@ class Environment(ArmEnvironment):
 		N_obs = 2
 		r_obs = np.ones([N_obs]) * 0.02 # 0.01 # 0.04
 		len_obs = np.ones([N_obs]) * 0.04
-		pos_obs = [np.array([0.065,0.05,0]), np.array([0.14,0.05,0])] # [np.array([0.1,0.05,0])] # [np.array([0.,0.03,0]), np.array([0.08,0.03,0])] # [np.hstack([target_exp+0.01,0])] # 
-		# [np.array([0.065,0.05,0]), np.array([0.135,0.05,0])] # 
+		pos_obs = [np.array([0.065,0.05,0]), np.array([0.14,0.05,0])]
 		self.obstacle_param = {
 			'N_obs': N_obs, 
 			'r_obs': r_obs, 

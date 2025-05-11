@@ -22,7 +22,7 @@ class SensoryFeedback:
 	def sensor(self, system, target):
 		target_vector = target[:,None] - system.position_collection[:-1,:]
 		self.dist = np.sqrt(np.einsum('in,in->n', target_vector, target_vector))
-		self.min_idx = np.argmin(self.dist) # -20 # -1 # 
+		self.min_idx = np.argmin(self.dist)
 		self.s0 = self.s[self.min_idx]
 		norm = _aver(self.dist)
 		norm[norm==0] += 1e-16
@@ -37,52 +37,36 @@ class SensoryFeedback:
 		return np.where(array>=0), np.where(array<0)
 
 	def TM_choice(self, array):
-		return np.where(abs(array)<=1.) # 0.1
+		return np.where(abs(array)<=1.)
 	
 	def feedback(self, time, system):
-		# mag_cos = system.director_collection.copy()[1,1,:]
-		# mag_sin = system.director_collection.copy()[2,1,:]
-		error_feedback = self.sin_alpha # mag_cos # mag_cos - mag_sin # 0.5 * (np.sqrt(3)*mag_cos - mag_sin) # 
+		error_feedback = self.sin_alpha #
 		idx_top, idx_bottom = self.LM_choice(error_feedback)
 		idx_central = self.TM_choice(error_feedback)
 		sigma = 0.01 # 0.01
-		mag = 1. # 1.0 # 0.2 ## w/o transverse muscle
+		if self.env.flags[3] == 'TM_reach':
+			mag = 1. ## w/o transverse muscle
+		else:
+			mag = 0.
 		steep = 300 # 500 # 200
 		shift = 1.5 # 1.5 # 2.5
 		## Ramp up the muscle torque
 		factor = min(1.0, time / self.ramp_up_time)
-		## calculating activation profile
-		# # self.s0 = self.s[30]
-		# # idx_top = idx_top[0][idx_top[0]<self.min_idx-2]
-		# # idx_bottom = idx_bottom[0][idx_bottom[0]<self.min_idx-2]
 		if self.s0 > self.s[10]:
 			## longitudinal
 			self.ctrl_mag[0,idx_top] = (-1 / (1 + np.exp(-steep * (self.s[idx_top] - (self.s0-shift*sigma)))) + 1) # shift*sigma*0
 			self.ctrl_mag[1,idx_bottom] = (-1 / (1 + np.exp(-steep * (self.s[idx_bottom] - (self.s0-shift*sigma)))) + 1) # shift*sigma*0
 			## transverse
-			# self.ctrl_mag[-1,:] = (-1 / (1 + np.exp(-steep * (self.s[:] - (self.s0-shift*sigma)))) + 1) * mag
-			# if time > 2.:
 			self.ctrl_mag[-1,idx_central] = (-1 / (1 + np.exp(-steep * (self.s[idx_central] - (self.s0-shift*sigma*0)))) + 1) * mag
 		else:
 			self.ctrl_mag[0,idx_top] = 1.
 			self.ctrl_mag[1,idx_bottom] = 1.
-		# ## Constant Bearing term
-		# EI = system.bend_matrix[0,0,:].copy()
-		# radius = system.radius.copy()
-		# n_tilde = radius * (radius/radius[0])**2
-		# a = 1 / _aver_kernel(n_tilde)
-		# a[1:-1] *= EI
-		# self.ctrl_mag[0, idx_top] *= (1 + 1 / self.dist[idx_top] * a[idx_top])
-		# self.ctrl_mag[1, idx_bottom] *= (1 + 1 / self.dist[idx_bottom] * a[idx_bottom])
-		# # self.ctrl_mag[0,:] = np.linspace(1,0.1,101)
 		mag_feedback = _aver_kernel(abs(error_feedback))
 		mag_feedback[0] = mag_feedback[1]
 		mag_feedback[1] = 0.5 * (mag_feedback[0] + mag_feedback[2])
-		# # mag_cos = 0.5 * (np.tanh(10*mag_feedback) + 1)
-		# # mag_ramp = 1 / (1 + np.exp(-500 * (self.s-self.s[idx_central]-0.01)))
-		self.ctrl_mag[:-1, :] *= factor * mag_feedback # * mag_ramp
+		self.ctrl_mag[:-1, :] *= factor * mag_feedback
 		self.ctrl_mag = np.clip(self.ctrl_mag, 0, 1)
-		self.ctrl_mag[-1, :] *= factor * (1 - mag_feedback**2) # mag_cos # * mag_ramp # * 0.1 #
+		self.ctrl_mag[-1, :] *= factor * (1 - mag_feedback**2)
 	
 	def sensory_feedback_law(self, time, system, target):
 		self.sensor(system, target)

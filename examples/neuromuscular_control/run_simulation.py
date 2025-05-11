@@ -2,9 +2,7 @@ import numpy as np
 import matplotlib.pylab as plt
 from tqdm import tqdm
 from elastica import *
-from set_arm_environment import ArmEnvironment
 from set_environment import Environment
-# from neuralctrl import NeuralCtrl
 from neuralctrl_Matsuoka import NeuralCtrl
 # from neuralctrl_FitzHugh_Nagumo import NeuralCtrl
 from sensoryfeedback import SensoryFeedback
@@ -64,75 +62,39 @@ def data_save(env, controller, sensor=None, desired=None):
 		'sensor': sensor_data,
 		'desired': desired,
 		}
-	# name = 'tau'+str(controller.neuron_param['tau'])+\
-	# 	'_lmd'+str(controller.neuron_param['lmd'])+\
-	# 	'_tauA'+str(controller.neuron_param['tau_adapt'])+\
-	# 	'_inhibit'+str(controller.neuron_param['inhibition'])+\
-	# 	'_adapt'+str(controller.neuron_param['adaptation'])+\
-	# 	'_V'+str(controller.neuron_param['V0'][0])+'-'+str(controller.neuron_param['V0'][1])+'-'+str(controller.neuron_param['V0'][2])+'-'+str(controller.neuron_param['V0'][3])
-	# np.save('Data/paper_bend_'+name+'.npy', data)
-	# np.save('Data/paper_backstepping.npy', data)
-	# np.save('Data/test_init1_3.npy', data)
-	# np.save('Data/test_backstepping2_gamma'+str(controller.gamma)+'_tracking2.npy', data)
-	# np.save('Data/journal_neural_transverse1.npy', data)
-	# np.save('Data/test_neural_lmd'+str(controller.neuron_param['lmd'])+'_mu'+str(controller.mu)+'_2.npy', data)
-	np.save('Data/journal_neural_reaching_TM.npy', data) # reaching # pointing_LM
-	### PID
-	# pid = controller.PID_param
-	# print('PID:', pid)
-	# name = 'order'+str(pid[3])+'_P'+str(pid[0])+'_I'+str(pid[1])+'_D'+str(pid[2])
-	# np.save('Data/test_ES_'+name+'.npy', data)
-	### Sensory feedback
-	# mu = controller.mu
-	# # inhibit = controller.neuron_param['inhibition']
-	# adapt = controller.neuron_param['adaptation']
-	# print('mu=', mu, 'adapt=', adapt)
-	# name = '_adapt'+str(adapt)+'_'+str(controller.neuron_param['V0'][0])+'-'+str(controller.neuron_param['V0'][2])
-	# if env.flags[0]:
-	# 	np.save('Data/paper_sensor_mu'+str(mu)+name+'.npy', data)
-	# else:
-	# 	pass
-	# 	# np.save('Data/paper_sensor_mu'+str(mu)+name+'.npy', data)
+	
+	if env.flags[3]	== 'LM_reach':
+		np.save('Data/journal_neural_reaching_LM.npy', data)
+	elif env.flags[3] == 'LM_point':
+		np.save('Data/journal_neural_pointing_LM.npy', data)
+	if env.flags[3] == 'TM_reach':
+		np.save('Data/journal_neural_reaching_TM.npy', data)
 
-	# name = 'tau'+str(controller.neuron_param['tau'])+\
-	# 	'_lmd'+str(controller.neuron_param['lmd'])+\
-	# 	'_inhibit'+str(controller.neuron_param['inhibition'])+\
-	# 	'_V'+str(controller.neuron_param['V0'][0])+'-'+str(controller.neuron_param['V0'][1])
-	# np.save('Data/FN_test_'+name+'.npy', data)
-	# mu = controller.mu
-	# inhibit = controller.neuron_param['inhibition']
-	# print('mu=', mu, 'inhibit=', inhibit)
-	# name = '_inhibit'+str(inhibit)
-	# if env.flags[0]:
-	# 	np.save('Data/FN_test_sensor2_mu'+str(mu)+name+'.npy', data)
-	# else:
-	# 	np.save('Data/FN_test_sensor_mu'+str(mu)+name+'.npy', data)
-
-	# np.save('Data/test_wave1.npy', data)
-	# np.save('Data/test_inhibition2_adaptation2_20_I10_tau0.03.npy', data)
-	# np.save('Data/test_inhibition2_adaptation2_20_I13_10.npy', data)
-	# np.save('Data/test_sensor2_1.npy', data)
-	# np.save('Data/test_PID0_P10.npy', data)
-	# np.save('Data/test_PID_P20I20.npy', data)
-	# np.save('Data/test_PID_shoot_P15I10D0.05.npy', data)
-	# np.save('Data/ES_PID_P40I15D0.06.npy', data)
-	# np.save('Data/ES_PID_shoot_P40I15.npy', data)
-
-def get_activation(time, systems, controller=None, desired_curvature=None, desired_activation=None, bendpoint=None):
-	activation = controller.neural_ctrl(time, systems[0], desired_curvature, desired_activation, bendpoint)
+def get_activation(time, systems, controller=None, desired_activation=None, bendpoint=None):
+	activation = controller.neural_ctrl(time, systems[0], desired_activation, bendpoint)
 	# activation = np.zeros([3,systems[0].n_elems+1])
 	return activation
 
+import click
 
-def main(filename):
+@click.command()
+@click.option(
+    "--case",
+    type=click.Choice(
+        ['LM_reach', 'LM_point', 'TM_reach'],
+        case_sensitive=False,
+    ),
+    default='TM_reach',
+)
+
+def main(case):
 	### Create arm and simulation environment
 	final_time = 4. # 6.0 # 4.0 # 1.001
 	flag_shooting = 1
 	flag_target = True # False # 
 	flag_obstacle = False # True # 
-	flags = [flag_shooting, flag_target, flag_obstacle]
+	flags = [flag_shooting, flag_target, flag_obstacle, case]
 
-	# env = ArmEnvironment(final_time, flags)
 	env = Environment(final_time, flags)
 	total_steps, systems = env.reset()
 
@@ -143,22 +105,11 @@ def main(filename):
 	sensor = SensoryFeedback(env, sensor_list, env.step_skip)
 
 	### Desired muscle activation or curvature
-	# u = np.vstack([gaussian(s, mu=0.1, sigma=0.02, magnitude=0.2), np.zeros([2, len(s)])])
 	V = np.vstack([gaussian(s, mu=0.1, sigma=0.02, magnitude=80), np.zeros([2, len(s)])])
 	u = controller.v_to_u(V)
-	# desired_kappa = gaussian(s[1:-1], mu=0.1, sigma=0.02, magnitude=20)
 	desired = {
 		'desired_u': u,
-		# 'desired_kappa': desired_kappa, 
-		# 'desired_pos': desired_position,
 	}
-	# # plt.figure()
-	# # plt.plot(s[1:-1], desired_kappa)
-	# # plt.plot(s[1:-1], -systems[0].kappa[0,:])
-	# # plt.figure()
-	# # plt.plot(desired_position[0,:], desired_position[1,:])
-	# # plt.show()
-	# # quit()
 	
 	### Start the simulation
 	print("Running simulation ...")
@@ -168,7 +119,6 @@ def main(filename):
 		u, sbar = sensor.sensory_feedback_law(time, systems[0], target)
 		activation = get_activation(
 			time, systems, controller=controller, 
-			# desired_curvature=desired_kappa,
 			desired_activation=u,
 			bendpoint=sbar,
 		)
@@ -181,13 +131,4 @@ def main(filename):
 
 
 if __name__ == "__main__":
-	import argparse
-	parser = argparse.ArgumentParser(
-		description='Run simulation'
-	)
-	parser.add_argument(
-		'--filename', type=str, default='simulation',
-		help='a str: data file name',
-	)
-	args = parser.parse_args()
-	main(filename=args.filename)
+	main()

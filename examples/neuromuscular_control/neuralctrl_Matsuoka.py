@@ -26,26 +26,12 @@ class Cable:
 		inhibition[[0,1]] = V[[1,0]] # Vss[[1,0]] # 
 		inhibition[-1] *= 0
 		dVdt = self.lmd*self.lmd * Vss - V + self.V_rest + I - self.V_adapt - self.inhibition_weight * relu(inhibition)
-		### Boundary conditions
-		# dVdt[..., 0] *= 0 # Dirichlet cond. at base
-		# dVdt[..., -1] = dVdt[..., -2] # Neumann cond. at tip
-		# dVdt[..., -1] *= 0 # Dirichlet cond. at tip
 		return dVdt / self.tau
 
 	def dynamics_adapt(self, V_adapt, I=None):
 		dVdt_adapt = -V_adapt + self.adaptation_weight * relu(self.V)
 		dVdt_adapt[-1] *= 0
 		return dVdt_adapt / self.tau_adapt
-	
-	# def cable_sol_RK(self, I_current, I_next):
-	# 	V_current = self.V.copy()
-	# 	k1 = self.dynamics_RK(V_current, I_current)
-	# 	k2 = self.dynamics_RK(V_current + k1 * self.dt/2, (I_current + I_next) / 2)
-	# 	k3 = self.dynamics_RK(V_current + k2 * self.dt/2, (I_current + I_next) / 2)
-	# 	k4 = self.dynamics_RK(V_current + k3 * self.dt, I_next)
-	# 	dVdt = 1/6.0 * (k1 + 2*k2 + 2*k3 + k4)
-	# 	self.V = V_current +  dVdt * self.dt
-	
 
 class NeuralCtrl:
 	def __init__(self, env, callback_list: dict, step_skip: int, ramp_up_time=0.0):
@@ -108,83 +94,17 @@ class NeuralCtrl:
 		self.ctrl_mag = np.zeros([3, self.n_elem+1])
 		self.I = np.zeros_like(self.ctrl_mag)
 
-		### PID controller
-		self.error_sum = np.zeros(self.n_elem-1)
-		self.error = np.zeros(self.n_elem-1)
-		self.delta_error = np.zeros(self.n_elem-1)
-
 		### Sensory Feedback controller
 		self.mu = 0
-	
-	def backstepping(self, u):
-		### first
-		# gamma = 100
-		# self.I = self.neuron.tau * gamma * (self.u_to_V(u) - self.neuron.V) + self.neuron.V - \
-		# 	self.neuron.lmd*self.neuron.lmd * \
-		# 		_diff_kernel(_diff(self.neuron.V)/self.neuron.ds)/self.neuron.ds
-		### second
-		# self.gamma = 1 / self.neuron.tau * 1000
-		# inhibition = self.neuron.V.copy()
-		# inhibition[[0,1]] = self.neuron.V[[1,0]]
-		# inhibition[-1] *= 0
-		# self.I = self.neuron.tau * self.gamma * (self.u_to_V(u) - self.neuron.V) + self.neuron.V + \
-		# 	self.neuron.V_adapt + self.neuron.inhibition_weight * relu(inhibition) - \
-		# 	self.neuron.lmd*self.neuron.lmd * _diff_kernel(_diff(self.neuron.V)/self.neuron.ds)/self.neuron.ds
-		### third
-		# self.gamma = 1 # 10
-		# self.I = self.gamma * (self.u_to_V(u) - self.neuron.V) + self.neuron.V + self.neuron.adaptation_weight * relu(self.neuron.V) - \
-		# 	self.neuron.lmd*self.neuron.lmd * _diff_kernel(_diff(self.neuron.V)/self.neuron.ds)/self.neuron.ds
-		### fourth
-		self.gamma = 3
-		self.I = self.gamma * (self.u_to_V(u) - self.neuron.V) + self.neuron.V + self.neuron.adaptation_weight * relu(self.neuron.V) - \
-			self.neuron.lmd*self.neuron.lmd * _diff_kernel(_diff(self.u_to_V(u))/self.neuron.ds)/self.neuron.ds
 	
 	def LM_choice(self, array):
 		return np.where(array>=0), np.where(array<0)
 	
-	def PID(self, system, kappa):
-		order = 0 # 0.5 # 1
-		KP = 6 # 40 # 1 # 
-		KI = 10 # 15 # 0.01 #
-		KD = 0 ## (* dt) # 0.06 # 50 # 1e-4 #
-		self.PID_param = [KP, KI, KD, order]
-		self.error_old = self.error.copy()
-		self.error = kappa - (-system.kappa[0,:])
-		self.error_sum += self.error
-		self.delta_error = self.error - self.error_old
-
-		input = KP * self.error + KI * self.error_sum * self.neuron.dt + KD * self.delta_error # / self.neuron.dt
-		input *= _aver((system.radius/system.radius[0])**order)
-		idx_top, idx_bottom = self.LM_choice(input)
-		self.I[0, idx_top] = input[idx_top]
-		self.I[1, idx_bottom] = -input[idx_bottom]
-	
 	def sensoryfeedback(self, system, u):
-		self.mu = 200 # 500 # 250 # 
+		self.mu = 200
 		self.I = self.mu * u
 	
-	def get_I(self, time, system, desired_curvature, desired_activation):
-		# self.I = np.zeros([3, self.n_elem+1])
-		# I0 = (0 + np.exp(self.s * 10)) * 10 # (-1 + np.exp(self.s * 10)) * 10
-		# self.I = np.vstack([
-		# 		I0, 
-		# 		np.zeros([1, self.n_elem+1]), 
-		# 		np.zeros([1, self.n_elem+1]),
-		# 		])
-		# self.I = np.ones([3, self.n_elem+1]) * np.array([10, 0, 0])[:,None]
-		# if time < 0.1:
-		# 	It = np.zeros(self.n_elem+1)
-		# elif time < 0.2:
-		# 	It = gaussian(self.s, mu=0., sigma=0.01, magnitude=1000)
-		# else:
-		# 	It = gaussian(self.s, mu=0., sigma=0.01, magnitude=1000/0.1*max(0,0.3-time))
-		# self.I = np.vstack([
-		# 	It, # mu=0.+0.4*time
-		# 	It, # np.zeros(self.n_elem+1),
-		# 	np.zeros(self.n_elem+1)
-		# ])
-		# self.backstepping(desired_activation)
-		# self.PID(system, desired_curvature)
+	def get_I(self, time, system, desired_activation):
 		self.sensoryfeedback(system, desired_activation)
 
 	def cable_eq(self, system):
@@ -205,9 +125,9 @@ class NeuralCtrl:
 	def v_to_u(self, V):
 		return 0.5 + 0.5 * np.tanh(self.var * (V - self.mean))
 	
-	def neural_ctrl(self, time, system, desired_curvature, desired_activation, bendpoint):
+	def neural_ctrl(self, time, system, desired_activation, bendpoint):
 		self.bendpoint = bendpoint
-		self.get_I(time, system, desired_curvature, desired_activation)
+		self.get_I(time, system, desired_activation)
 		self.callback()
 		self.cable_eq(system)
 		self.V_to_u(time)
