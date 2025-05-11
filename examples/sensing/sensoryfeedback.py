@@ -34,10 +34,6 @@ def solve(f, y0, ss, kk, ds):
 		alpha.append(y[1])
 	return np.array(alpha)
 
-# def noisy_measure(x, dt, sigma_W):
-# 	x_hat = sigma_W / np.sqrt(dt) * np.random.normal(size=x.shape)
-# 	return x_hat
-
 def noisy_measure(x, sigma_W):
 	x_hat = x * (1 + sigma_W * np.random.normal(size=x.shape))
 	return x_hat
@@ -103,10 +99,6 @@ class SensoryFeedback:
 		self.env.diffusion_simulator.simulate(target, self.env.time_step)
 		r0 = system.position_collection[:2, ::self.env.sensor_skip].T
 		
-		# sin = system.director_collection[0,1,:]
-		# cos = system.director_collection[1,1,:]
-		# theta0 = np.hstack([0, np.arctan2(sin, cos)])[::self.env.sensor_skip]
-
 		conc = self.env.diffusion_simulator.get_sensor_conc(r0)
 		kappa0 = -system.kappa[0, :]
 		kappa = np.hstack([kappa0[0], kappa0, kappa0[-1]])
@@ -135,13 +127,11 @@ class SensoryFeedback:
 		return np.where(array>=0), np.where(array<0)
 	
 	def feedback(self, time, system):
-		# mag_cos = system.director_collection.copy()[1,1,:]
-		# mag_sin = system.director_collection.copy()[2,1,:]
-		error_feedback = self.sin_alpha # mag_cos # mag_cos - mag_sin # 0.5 * (np.sqrt(3)*mag_cos - mag_sin) # 
+		error_feedback = self.sin_alpha
 		idx_top, idx_bottom = self.LM_choice(error_feedback)
-		sigma = 0.01 # 0.01
-		steep = 300 # 300 # 200
-		shift = 1.5 # 1.5 # 2.5
+		sigma = 0.01
+		steep = 300
+		shift = 1.5
 		## Ramp up the muscle torque
 		factor = min(1.0, (time - self.muscle_activation_time) / self.ramp_up_time)
 		if self.s0 > self.s[10]:
@@ -151,11 +141,8 @@ class SensoryFeedback:
 		else:
 			self.ctrl_mag[0,idx_top] = 1.
 			self.ctrl_mag[1,idx_bottom] = 1.
-		# mag_feedback = _aver_kernel(abs(error_feedback))
-		# mag_feedback[0] = mag_feedback[1]
-		# mag_feedback[1] = 0.5 * (mag_feedback[0] + mag_feedback[2])
 		mag_feedback = abs(error_feedback)
-		self.ctrl_mag[:-1, :] *= factor * mag_feedback # * mag_ramp
+		self.ctrl_mag[:-1, :] *= factor * mag_feedback
 		self.ctrl_mag = np.clip(self.ctrl_mag, 0, 1)
 	
 	def sensory_feedback_law(self, time, system, target):

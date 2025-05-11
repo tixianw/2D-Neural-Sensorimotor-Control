@@ -7,7 +7,7 @@ from elastica import *
 from set_arm_environment import *
 from tools import target_traj, d2r, _aver, cum_integral
 from concentration import Concentration
-from bearing_sensing_new import BearingSensing
+from bearing_sensing import BearingSensing
 
 def cal_arm_state(kappa, ds):
 	theta = np.hstack([0, cum_integral(_aver(kappa), ds)])
@@ -45,17 +45,6 @@ def alpha_mu_initialization(kappa, ds, target, sensor_skip, L, mu_true, theta0):
 	# alpha = np.unwrap(alpha)
 	conc = -1/mu_true * np.log(dist_true[::sensor_skip])
 	mu = -1/conc * np.log(dist)
-	# plt.figure()
-	# plt.scatter(target[0], target[1], s=200, marker='*')
-	# plt.scatter(target_beliefs[0,:], target_beliefs[1,:], s=50, marker='.')
-	# plt.axis([offset[0]-0.2,target[0]+0.2,target[1]-0.2,offset[1]+0.2])
-	# print(mu)
-	# plt.figure()
-	# s = np.linspace(0, L, len(theta))
-	# plt.plot(s, alpha_true)
-	# plt.scatter(s[::sensor_skip], alpha)
-	# plt.show()
-	# quit()
 	return [alpha, mu]
 
 # Add call backs
@@ -125,14 +114,6 @@ class Environment(ArmEnvironment):
 		
 	def set_target(self):
 		self.target = np.zeros([self.total_steps, 2])
-		
-		# ## moving target
-		# pos1 = np.array([x_star, y_star])
-		# pos2 = np.array([-x_star*1., y_star])
-		# # pos2 = np.array([x_star*1.5, -y_star])
-		# # target_traj(target, pos1, pos1, 0., 0.15, self.total_steps)
-		# target_traj(self.target, pos1, pos2, 0., 1., self.total_steps)
-		# # target_traj(target, pos2, pos2, 0.8, 1., self.total_steps)
 
 		## static target
 		self.target[:,:] = self.target_init.copy()
@@ -141,7 +122,7 @@ class Environment(ArmEnvironment):
 		L = self.arm_param['L']
 		bounds = [-L*2, L*2, -L*2, L*2]
 		Delta_s = 0.01 # 0.0001 # ## for static concentration with higher resolution
-		mu = 2. # 1. # 5.
+		mu = 2.
 		self.diffusion_list = defaultdict(list)
 		self.diffusion_simulator = Concentration(bounds, Delta_s, self.target[0,:], mu, self.diffusion_list, self.step_skip)
 		self.diffusion_param = {

@@ -35,11 +35,6 @@ def d2r(d):
 	return d/180*np.pi
 
 def circ_conv(W, V, delta):
-	# N = len(W[:-1])
-	# # res = np.convolve(W, V)[:N] * delta / (2*np.pi)
-	# # return res
-	# WW = np.pad(W[:-1],(int(N/2)-1,int(N/2)+1),'wrap')
-	# res = np.convolve(WW, V[:-1],'valid')
 	res = np.convolve(W, V, 'valid') ## W is from -2pi to 2pi, V is from -pi to pi
 	return res * delta / (2*np.pi)
 

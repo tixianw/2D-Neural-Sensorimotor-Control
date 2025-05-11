@@ -5,24 +5,6 @@ Created on Feb Sep 26, 2023
 import numpy as np
 from elastica import *
 
-folder_name = 'Data/'
-file_name = 'journal_video_sensing_bend_low_c_resolution'
-data = np.load(folder_name + file_name + '.npy', allow_pickle='TRUE').item()
-arm = data['arm']
-sensor = data['sensor']
-sensor_skip = data['model']['sensor']['sensor_skip']
-target_t = data['model']['target']
-target = target_t[0]
-position = arm[-1]['position'][:,:2,:]
-r0 = position[0, :, ::sensor_skip].T
-dist_true = np.linalg.norm(r0 - target, axis=1)
-mu_true = data['model']['diffusion']['mu_true']
-conc_t = sensor[-1]['conc']
-conc_bad = conc_t[-1, :]
-conc_good = -1/mu_true * np.log(dist_true)
-# print(conc_good, conc_bad)
-# quit()
-
 class Concentration:
 	def __init__(self, bounds, ds, target, mu, callback_list: dict, step_skip: int):
 		self.bounds = bounds # [xlb,xub,ylb,yub]
@@ -39,6 +21,25 @@ class Concentration:
 		self.get_target(target)
 		self.c = np.zeros_like(self.xy[0]) # self.conc.copy() # 
 		self.step = 0
+
+		if target[0] == 0.12:
+			folder_name = 'Data/'
+			file_name = 'init_sensing_bend_low_concentration_resolution'
+			data = np.load(folder_name + file_name + '.npy', allow_pickle='TRUE').item()
+			arm = data['arm']
+			sensor = data['sensor']
+			sensor_skip = data['model']['sensor']['sensor_skip']
+			target_t = data['model']['target']
+			target = target_t[0]
+			position = arm[-1]['position'][:,:2,:]
+			r0 = position[0, :, ::sensor_skip].T
+			dist_true = np.linalg.norm(r0 - target, axis=1)
+			mu_true = data['model']['diffusion']['mu_true']
+			conc_t = sensor[-1]['conc']
+			self.conc_bad = conc_t[-1, :]
+			self.conc_good = -1/mu_true * np.log(dist_true)
+		elif target[0] == 0.16:
+			pass
 	
 	def get_target(self, target):
 		self.target = target
@@ -82,7 +83,8 @@ class Concentration:
 		idx_sensor = ((r0 - np.array([self.bounds[0], self.bounds[2]])) / self.ds).astype('int')
 		conc = self.c[idx_sensor[:,1], idx_sensor[:,0]] ## dynamic concentration
 		# conc = self.conc[idx_sensor[:,1], idx_sensor[:,0]] ## static concentration
-		conc = conc / conc_bad * conc_good
+		if self.target[0] == 0.12:
+			conc = conc / self.conc_bad * self.conc_good
 		return conc
 
 	def callback(self):
