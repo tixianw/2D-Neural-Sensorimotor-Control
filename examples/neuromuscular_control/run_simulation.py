@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pylab as plt
 from tqdm import tqdm
@@ -63,12 +64,17 @@ def data_save(env, controller, sensor=None, desired=None):
 		'desired': desired,
 		}
 	
+	folder_name = 'Data/'
+	if not os.path.exists(folder_name):
+		os.makedirs(folder_name)
+		print(f"Directory {folder_name} created")
+	
 	if env.flags[3]	== 'LM_reach':
-		np.save('Data/journal_neural_reaching_LM.npy', data)
+		np.save(folder_name + 'journal_neural_reaching_LM.npy', data)
 	elif env.flags[3] == 'LM_point':
-		np.save('Data/journal_neural_pointing_LM.npy', data)
+		np.save(folder_name + 'journal_neural_pointing_LM.npy', data)
 	if env.flags[3] == 'TM_reach':
-		np.save('Data/journal_neural_reaching_TM.npy', data)
+		np.save(folder_name + 'journal_neural_reaching_TM.npy', data)
 
 def get_activation(time, systems, controller=None, desired_activation=None, bendpoint=None):
 	activation = controller.neural_ctrl(time, systems[0], desired_activation, bendpoint)

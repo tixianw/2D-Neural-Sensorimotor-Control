@@ -1,5 +1,6 @@
 import sys
 sys.path.append("../../")
+import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
@@ -36,6 +37,10 @@ import click
 def main(case):
 
     folder_name = 'Data/'
+
+    if not os.path.exists(folder_name):
+        raise FileNotFoundError(f"Folder not found: {folder_name}, run the simulation first.")
+
     if case == 'LM_reach':
         file_name = 'journal_neural_reaching_LM'
     elif case == 'LM_point':
@@ -185,7 +190,13 @@ def main(case):
             name = 'trash'
         slow_factor = 2
         fps = 100 / slow_factor
-        video_name = 'Videos/' + name + ".mov"
+
+        video_folder_name = 'Videos/'
+        if not os.path.exists(video_folder_name):
+            os.makedirs(video_folder_name)
+            print(f"Folder didn't exist, created: {video_folder_name}")
+
+        video_name = video_folder_name + name + ".mov"
         FFMpegWriter = manimation.writers["ffmpeg"]
         metadata = dict(title="Movie Test", artist="Matplotlib", comment="Movie support!")
         writer = FFMpegWriter(fps=fps, metadata=metadata)
