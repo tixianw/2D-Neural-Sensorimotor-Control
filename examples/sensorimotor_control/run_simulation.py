@@ -6,7 +6,6 @@ import numpy as np
 from numpy.linalg import norm
 from tqdm import tqdm
 from elastica import *
-from set_arm_environment import ArmEnvironment
 from set_environment import Environment
 from neuralctrl_Matsuoka import NeuralCtrl
 from sensoryfeedback import SensoryFeedback
@@ -71,31 +70,27 @@ def data_save(env, controller, sensor=None, desired=None):
 		'desired': desired,
 		}
 	if not env.flags[0]:
-		# file_name = 'test2'
 		pass
 	else:
-		# file_name = 'test3'
-		# file_name = 'journal_sensing_bend'
-		file_name = 'journal_sensorimotor7'
+		file_name = 'journal_sensorimotor'
 	np.save('Data/'+file_name+'.npy', data)
 
-def get_activation(systems, time, controller=None, desired_curvature=None, desired_activation=None, bendpoint=None):
+def get_activation(systems, time, controller=None, desired_activation=None, bendpoint=None):
 	if controller==None:
 		activation = np.zeros([3, systems[0].n_elems+1])
 	else:
-		activation = controller.neural_ctrl(time, systems[0], desired_curvature, desired_activation, bendpoint)
+		activation = controller.neural_ctrl(time, systems[0], desired_activation, bendpoint)
 	return activation
 
 
-def main(filename):
+def main():
 	## Create arm and simulation environment
-	final_time = 2. # 1.5 # 1.001
+	final_time = 2.
 	flag_shooting = 1
 	flag_target = True # False # 
 	flag_obstacle = False # True # 
 	flags = [flag_shooting, flag_target, flag_obstacle]
 
-	# env = ArmEnvironment(final_time, flags)
 	env = Environment(final_time, flags)
 	total_steps, systems = env.reset()
 
@@ -103,7 +98,7 @@ def main(filename):
 	neural_list = defaultdict(list)
 	sensor_list = defaultdict(list)
 	controller = NeuralCtrl(env, neural_list, env.step_skip)
-	muscle_activation_time = 0.0 # 0.2 # final_time+1e-5 # 
+	muscle_activation_time = 0.0
 	sensor = SensoryFeedback(env, sensor_list, env.step_skip, muscle_activation_time=muscle_activation_time)
 	
 	## Start the simulation
@@ -113,9 +108,7 @@ def main(filename):
 		target = env.target[k_sim, :]
 		u, sbar = sensor.sensory_feedback_law(time, systems[0], target)
 		activation = get_activation(systems, time, controller=controller, desired_activation=u, bendpoint=sbar)
-		# print(controller.dist)
 		time, systems, done = env.step(time, activation)
-		# systems[0].position_collection = env.init_data['pos'].copy()
 		if not k_sim % env.step_skip:
 			dist = norm(env.sensors.target_belief.mean(axis=0) - target) / env.arm_param['L']
 		if done or dist < 0.005:
@@ -126,13 +119,4 @@ def main(filename):
 
 
 if __name__ == "__main__":
-	import argparse
-	parser = argparse.ArgumentParser(
-		description='Run simulation'
-	)
-	parser.add_argument(
-		'--filename', type=str, default='simulation',
-		help='a str: data file name',
-	)
-	args = parser.parse_args()
-	main(filename=args.filename)
+	main()

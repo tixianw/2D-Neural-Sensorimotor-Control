@@ -4,19 +4,6 @@ from elastica._linalg import _batch_matvec, _batch_cross
 from elastica._calculus import quadrature_kernel, difference_kernel
 from tools import _diff, _aver, _diff_kernel, _aver_kernel
 
-# @njit(cache=True)
-# def _passive_force(internal_forces, max_force, sigma):
-# 	nu1 = sigma[-1, :] + 1
-# 	blocksize = nu1.shape[0]
-# 	internal_TM = np.zeros((3, blocksize))
-# 	idx = np.where(nu1 < 1)[0]
-# 	# print(idx)
-# 	for i in range(len(idx)):
-# 		internal_TM[2, idx[i]] = max_force[-1, idx[i]] * (1 / nu1[idx[i]] - 1) * 0.2
-# 	internal_forces[:, :] += internal_TM
-# 	nu1 = sigma[-1, :] + 1
-# 	return
-
 @njit(cache=True)
 def _passive_force(internal_forces, S, sigma):
 	blocksize = sigma.shape[-1]
@@ -68,16 +55,7 @@ def _internal_to_external_load(
 	external_forces, external_couples,
 	muscle_bend_couple, muscle_shear_couple
 	):
-	# # rotation = director_collection.copy()[1:, 1, :]
-	# # external_forces[:2, 1:-1] = np.diff(rotation * internal_forces[2, :])
-	# # external_forces[:2, 0] = (rotation * internal_forces[2, :])[:, 0]
-	# # external_forces[:2, -1] = -(rotation * internal_forces[2, :])[:, -1]
-
-	# # external_couples[0, :] = np.diff(internal_couples[0, :]) + sigma[1, :] * internal_forces[2, :] * rest_lengths
-
-	# _passive_force(internal_forces, max_force, sigma)
 	_passive_force(internal_forces, shear_matrix, sigma)
-	# _passive_couple(internal_couples, bend_matrix, kappa)
 	
 	external_forces[:, :] = difference_kernel(
 		_material_to_lab(director_collection, internal_forces)
@@ -90,38 +68,20 @@ def _internal_to_external_load(
 			)  * rest_lengths
 
 	external_couples[:, :] = muscle_bend_couple + muscle_shear_couple
-
-	# external_couples[:, :] = (
-	# 	_diff(internal_couples) +
-	# 	# quadrature_kernel(
-	# 	# 	_batch_cross(kappa, internal_couples) * rest_voronoi_lengths
-	# 	# ) +
-	# 	_batch_cross(
-	# 			_lab_to_material(director_collection, tangents * dilatation),
-	# 			internal_forces
-	# 		)  * rest_lengths
-	# 	)
 	return
 
 @njit(cache=True)
 def longitudinal_muscle_function(
 	magnitude_force_mean, magnitude_force, 
-	r_LM, max_force,# radius_ratio, radius,
+	r_LM, max_force,
 	director_collection, tangents, rest_lengths, 
 	dilatation, sigma, kappa, 
 	shear_matrix, bend_matrix, 
-	# internal_forces_mean,
 	internal_forces, internal_couples,
 	external_forces, external_couples,
 	muscle_bend_couple, muscle_shear_couple
 ):
-	# internal_forces_mean[2, :] = magnitude_force_mean.copy()
 	internal_forces[2, :] = _row_sum(magnitude_force)
-	# r_m = r_LM # _aver_kernel(r_LM)
-	# # internal_couples[:, :] = _batch_cross(
-	# # 	r_m, 
-	# # 	internal_forces_mean
-	# # )
 	internal_couples[0, :] = _row_sum(r_LM * magnitude_force_mean)
 
 	_internal_to_external_load(
@@ -133,11 +93,10 @@ def longitudinal_muscle_function(
 		muscle_bend_couple, muscle_shear_couple
 	)
 
-# force-length curve (x) = 3.06 x^3 - 13.64 x^2 + 18.01 x - 6.44
 @njit(cache=True)
-def force_length_curve_poly(stretch, f_l_coefficients=np.array([-57.6/39.2, 176/39.2, -80/39.2])): # np.array([-6.44, 18.01, -13.64, 3.06])):
+def force_length_curve_poly(stretch, f_l_coefficients=np.array([-57.6/39.2, 176/39.2, -80/39.2])):
 	degree = f_l_coefficients.shape[0]
-	blocksize = stretch.shape # [0] # 3 \times n_elem+1
+	blocksize = stretch.shape
 	force_weight = np.zeros(blocksize)
 	for k in range(blocksize[0]):
 		for i in range(blocksize[1]):
@@ -148,7 +107,6 @@ def force_length_curve_poly(stretch, f_l_coefficients=np.array([-57.6/39.2, 176/
 
 class ContinuousActuation:
 	def __init__(self, n_elements: int, n_muscle,max_force,radius_ratio,passive_ratio):
-		# self.internal_forces_mean = np.zeros((3, n_elements+1))
 		self.internal_forces = np.zeros((3, n_elements)) 	   # material frame
 		self.external_forces = np.zeros((3, n_elements+1))     # global frame
 		self.internal_couples = np.zeros((3, n_elements+1))    # material frame
@@ -191,7 +149,6 @@ class ContinuousActuation:
 			curvature=self.kappa_to_curvature(system.kappa, system.voronoi_dilatation),
 			off_center_displacement=_aver_kernel(self.muscle_radius_ratio * system.radius),
 		)
-		# self.weight[...] = force_length_curve_poly(self.nu_muscle)
 		
 	def __call__(self, system):
 		self.calculate_force_length_weight(system)
@@ -202,7 +159,6 @@ class ContinuousActuation:
 			system.director_collection, system.tangents, system.rest_lengths, 
 			system.dilatation, system.sigma, system.kappa[0, :] / system.voronoi_dilatation, 
 			system.shear_matrix, system.bend_matrix, 
-			# self.internal_forces_mean, 
 			self.internal_forces, self.internal_couples,
 			self.external_forces, self.external_couples,
 			self.muscle_bend_couple, self.muscle_shear_couple

@@ -29,8 +29,8 @@ class Concentration:
 		dist = np.sqrt((self.xy[0]-target[0])**2 + (self.xy[1]-target[1])**2)
 		self.conc = -1/self.mu * np.log(dist)
 
-	def Laplacian(self, u): # Delta_u
-		u_pad = np.pad(u, ((1, 1), (1, 1)), mode='edge') # constant(zero-B.C.)
+	def Laplacian(self, u): ## Delta_u
+		u_pad = np.pad(u, ((1, 1), (1, 1)), mode='edge') ## constant(zero-B.C.)
 		u_sum = u_pad[:-2,1:-1] + u_pad[2:,1:-1] + u_pad[1:-1,:-2] + u_pad[1:-1,2:]
 		Delta_u = (u_sum - 4*u) / self.ds**2
 		return Delta_u
@@ -47,7 +47,7 @@ class Concentration:
 				u[i,-1] = self.conc[i,-1]
 		return u
 	
-	def dynamics(self, u , dt): # u_t = Delta_u + f
+	def dynamics(self, u , dt): ## u_t = Delta_u + f
 		du_dt = self.D * self.Laplacian(u)
 		u_next = u + du_dt * dt
 		u_next[self.idx_target[1], self.idx_target[0]] = self.intensity

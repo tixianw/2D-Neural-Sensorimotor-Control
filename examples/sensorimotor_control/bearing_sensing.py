@@ -26,8 +26,7 @@ def Dist(r, target, L):
 	# dist = norm(aver_r - target[None,:], axis=1) / L
 	dists = norm(r - target, axis=-1) / L
 	dist = dists.mean(axis=-1)
-	# print(np.amin(dist))
-	return np.amin(dist) # dist[-1] # 
+	return np.amin(dist)
 
 class BearingSensing:
 	def __init__(self, delta_s, n_sensor, alpha0, mu0, theta0, gain_mu, gain_r, gain_theta, \
@@ -95,7 +94,6 @@ class BearingSensing:
 	def chemosensing(self, conc, kappa, r0, dtheta_dt):
 		dr_dt = -self.gain_r * (self.Laplacian @ self.r + self.sensor_pos_diff(kappa))
 		# dr_dt = -self.gain_r * (self.Laplacian @ (self.r + r0))
-		# print(np.sum((self.Laplacian @ r0 - self.sensor_pos_diff(kappa, theta0))**2))
 		temp = np.einsum('nij,nj->ni', self.R(-self.beta), dr_dt)
 		dalpha_dt = self.rho(conc) * temp[:,1] - dtheta_dt
 		dmu_dt = -(conc * self.rho(conc)) * temp[:,0] - self.Laplacian @ self.mu * self.gain_mu
@@ -125,7 +123,6 @@ class BearingSensing:
 		else:
 			self.neurons_chemo.simulate(dalpha_dt)
 			self.neurons_proprio.simulate(dtheta_dt)
-			# print((self.neurons_chemo.angle - self.alpha)/dalpha_dt)
 			self.alpha = self.neurons_chemo.angle
 			self.theta = self.neurons_proprio.angle
 		# self.alpha = np.unwrap(self.alpha)
