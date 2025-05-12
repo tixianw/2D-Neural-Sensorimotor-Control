@@ -73,19 +73,68 @@ Before installation, create a Python virtual environment to manage dependencies 
 
 ## Example
 
-Please refer to [`examples`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples) directory and learn how to use this **2D-Neural-Sensorimotor-Control** package. Two examples are provided:
-  - [`BendFormation`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples/BendFormation) initialize a straight octopus arm and form a bend to reach a target.
-  - [`BendPropagation`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples/BendPropagation) creates an octopus arm with initial bend and propagates it towards the target.
+Please refer to [`examples`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples) directory and learn how to use this **2D-Neural-Sensorimotor-Control** package. Three examples are provided. First nevigate to one of the example folders before running the scripts.
+  - [`neuromuscular_control`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples/neuromuscular_control) demonstrates three cases: `LM_reach`, `LM_point` and `TM_reach` which illustrate how longitudinal muscles and transverse muscle actuate the neuromuscular arm model to reach or point towards a static target.
+    First nevigate to the `neuromuscular_control` folder:
+    ```
+    cd examples/neuromuscular_control/
+    ```
+    Run the following commands to simulate one of the three cases: `LM_reach`, `LM_point` or `TM_reach`. For instance:
+    ```
+    python run_simulation.py --case LM_reach
+    ```
+    When simulation script finishes, run the following commands to plot the results:
+    ```
+    python plotting_neuromuscular.py --case LM_reach
+    ```
+
+  - [`sensing`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples/sensing) showcases how a straight or bent static arm performs chemosensing and proprioception locally from the suckers and collectively estimate where the target locates(food source that diffuses chemical concentration).
+    First nevigate to the `sensing` folder:
+    ```
+    cd examples/sensing/
+    ```
+    Run the following commands to simulate one of the two cases: `straight` or `bend`. For instance:
+    ```
+    python run_simulation.py --case straight
+    ```
+    When simulation script finishes, run the following commands to plot the results:
+    ```
+    python plotting_sensory.py --case straight
+    ```
+
+  - [`sensorimotor_control`](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/tree/main/examples/sensorimotor_control) provides a simulation results for the end-to-end sensorimotor control framework where the arm simultaneously performs sensing and neuromotor feedback control to reach towards the estimated target.
+    First nevigate to the `sensorimotor_control` folder:
+    ```
+    cd examples/sensorimotor_control/
+    ```
+    Run the following commands to simulate the sensorimotor control:
+    ```
+    python run_simulation.py
+    ```
+    When simulation script finishes, run the following commands to plot the results:
+    ```
+    python plotting_sensorimotor.py
+    ```
 
 ## License
 
 This project is released under the [MIT License](https://github.com/tixianw/2D-Neural-Sensorimotor-Control/blob/main/LICENSE).
 
-## Contributing
+## Citation
+
+@article{wang2024neural,
+  title={Neural models and algorithms for sensorimotor control of an octopus arm},
+  author={Wang, Tixian and Halder, Udit and Gribkova, Ekaterina and Gillette, Rhanor and Gazzola, Mattia and Mehta, Prashant G},
+  journal={arXiv preprint arXiv:2402.01074},
+  year={2024}
+}
+
+
+<!-- ## Contributing
 
 1. Fork this repository
 2. Create your feature branch (`git checkout -b feat/amazing-feature`)
 3. Make your changes
 4. Commit your changes (`git commit -m "feat: Add some amazing feature"`)
 5. Push to the feature branch (`git push origin feat/amazing-feature`)
-6. Open a Pull Request
+6. Open a Pull Request -->
