@@ -122,12 +122,14 @@ This project is released under the [MIT License](https://github.com/tixianw/2D-N
 
 ## Citation
 
+```
 @article{wang2024neural,
   title={Neural models and algorithms for sensorimotor control of an octopus arm},
   author={Wang, Tixian and Halder, Udit and Gribkova, Ekaterina and Gillette, Rhanor and Gazzola, Mattia and Mehta, Prashant G},
   journal={arXiv preprint arXiv:2402.01074},
   year={2024}
 }
+```
 
 
 <!-- ## Contributing
