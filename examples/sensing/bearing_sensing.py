@@ -123,7 +123,6 @@ class BearingSensing:
 		else:
 			self.neurons_chemo.simulate(dalpha_dt)
 			self.neurons_proprio.simulate(dtheta_dt)
-			# print((self.neurons_chemo.angle - self.alpha)/dalpha_dt)
 			self.alpha = self.neurons_chemo.angle
 			self.theta = self.neurons_proprio.angle
 		self.beta = self.alpha + self.theta

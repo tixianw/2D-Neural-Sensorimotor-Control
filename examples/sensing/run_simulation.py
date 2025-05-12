@@ -100,7 +100,7 @@ import click
 
 def main(case, target_idx=None):
 	## Create arm and simulation environment
-	final_time = 2. # 20. # 
+	final_time = 2.
 	if case == 'straight':
 		flag_shooting = 0
 	elif case == 'bend':

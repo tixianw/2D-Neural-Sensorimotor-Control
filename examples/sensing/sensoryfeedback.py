@@ -105,7 +105,7 @@ class SensoryFeedback:
 		self.dist_true, self.alpha_true, self.theta_true = self.cal_true_sensory_info(kappa, self.ds, target)
 		# conc += noisy_measure(conc, self.env.time_step, sigma_W =0.0002) # 1e-5 ## noisy concentration measurements
 		# kappa += noisy_measure(kappa, self.env.time_step, sigma_W=0.001) ## noisy curvature measurements
-		sigma_W = 0. # 0.05 # 0.01
+		sigma_W = 0. # 0.05
 		conc = noisy_measure(conc, sigma_W=sigma_W)
 		kappa = noisy_measure(kappa, sigma_W=sigma_W)
 		self.env.sensors.simulate(r0, conc, kappa[::self.env.sensor_skip], self.env.time_step) # old
