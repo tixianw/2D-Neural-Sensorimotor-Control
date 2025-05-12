@@ -47,22 +47,21 @@ class NeuralCtrl:
 
 		self.n_elem = env.arm_param['n_elem']
 		L = env.arm_param['L']
-		# radius = env.arm_param['radius']
 		ds = L / self.n_elem
 		self.s = np.linspace(0, L, self.n_elem+1)
 		dt = env.time_step             
-		tau = 0.04 # 0.04 #
-		lmd0 = 0.02 # 0.05 # 0.1 # 
-		lmd = lmd0 # abs(lmd0) * np.sqrt(radius/radius[0]) # 
-		tau_adapt = tau * 10 # 2
-		inhibition_weight = 0. # 2. # 0.2 #
-		adaptation_weight = 1. # 2. # 2. # 
+		tau = 0.04 
+		lmd0 = 0.02
+		lmd = lmd0
+		tau_adapt = tau * 10
+		inhibition_weight = 0.
+		adaptation_weight = 1.
 		### initial voltage
-		self.V_rest = 0. # -50
-		V_t0 = 60 # 40 # 50 # 
-		V_b0 = 40 # 50 # self.V_rest #
-		V_t1 = 80 # 120 # 75
-		V_b1 = 0 # -25 # V_b0
+		self.V_rest = 0.
+		V_t0 = 60
+		V_b0 = 40
+		V_t1 = 80
+		V_b1 = 0
 		if env.flag_shooting:
 			V0 = env.init_data['rest_V']
 		else:

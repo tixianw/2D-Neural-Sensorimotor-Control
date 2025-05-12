@@ -95,7 +95,7 @@ import click
 
 def main(case):
 	### Create arm and simulation environment
-	final_time = 4. # 6.0 # 4.0 # 1.001
+	final_time = 4.
 	flag_shooting = 1
 	flag_target = True # False # 
 	flag_obstacle = False # True # 
